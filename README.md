@@ -1,12 +1,13 @@
-# geokb
-Data processing workflows for initializing and building the Geoscience Knowledgebase
+# GeoKB Notebook-based Bots
+The Geoscience Knowledgebase (GeoKB) is a framework for assembling, organizing, and growing knowledge about the earth system. We are building it on the Wikibase infrastructure to take advantage of tools and techniques already in use across many other domains. Much of the content that flows into the GeoKB comes from existing sources, both static and dynamic. We use bots to build entities and claims, some of which make best sense as computational notebooks. This repository is dedicated to those notebook bots that are foudnational to initializing an GeoKB instance or that are otherwise part of the core development effort.
+
+We are iteratively working to build our abstracted functionality in a deployable Python package based on the pywikibot package that impose the rules and conventions we are evolving for the GeoKB. Both that package and the notebooks may prove useful for other communinities.
 
 ## Dependencies
 
-See the environment.yml for a complete environment if you choose to go that route. Primary dependencies here include something that will run Python Notebooks plus the following. Earlier versions of Python should be fine to a certain extent.
+See the environment.yml for a complete Conda environment if you choose to go that route. Primary dependencies here include something that will run Python Notebooks plus the following. Earlier versions of Python should be fine to a certain extent.
 
-* required installs:
-    - `pip install -U setuptools`
+* Primary packages
     - `pip install pywikibot`
     - `pip install wikitextparser`
 
