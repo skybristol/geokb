@@ -1,10 +1,15 @@
 # GeoKB Notebook-based Bots
-The Geoscience Knowledgebase (GeoKB) is a framework for assembling, organizing, and growing knowledge about the earth system. We are building it on the Wikibase infrastructure to take advantage of tools and techniques already in use across many other domains. Much of the content that flows into the GeoKB comes from existing sources, both static and dynamic. We use bots to build entities and claims, some of which make best sense as computational notebooks. This repository is dedicated to those notebook bots that are foudnational to initializing an GeoKB instance or that are otherwise part of the core development effort.
+The Geoscience Knowledgebase (GeoKB) is a framework for assembling, organizing, growing, and reasoning (AI) knowledge about the earth system. We are building it on the Wikibase infrastructure to take advantage of tools and techniques already in use across many other domains. Much of the content that flows into the GeoKB comes from existing sources, both static and dynamic. We use bots as one method to build entities and claims, some of which make best sense as computational notebooks. This repository is dedicated to those notebook bots that are foudnational to initializing an GeoKB instance or that are otherwise part of the core development effort.
 
-We are iteratively working to build our abstracted functionality in a deployable Python package based on the pywikibot package that impose the rules and conventions we are evolving for the GeoKB. Both that package and the notebooks may prove useful for other communinities.
+## Other Methods
+Bots, whether built in notebook form or some other packaging, are one method of handling more routine or regular input to the GeoKB. We'll use these for cases where we need to process an entire source over and over again to incorporate new records and updates or to reprocess information into a new knowledge encoding.
+
+Other routes we are exploring will take advantage of the longstanding QuickStatements tool and related methods to produce QuickStatements encoding through OpenRefine. We are also exploring the use of GIS software where part of the work includes viewing a batch of items in a GIS (via point coordinate location with a property using the globe-coordinate datatype) and doing work on either the geospatial piece or associated property data. These will get fed back into the system via some type of bot action that will incorporate edits, including new items. The GIS part of this will take some additional work as we need to also deal with items in the GeoKB with more complex geometry, likely using a different approach than the Wikidata/Wikimedia Commons connection with the GeoShape datatype.
+
+## Python Package
+We are iteratively working to build our abstracted functionality in a deployable Python package based on the pywikibot package that impose the rules and conventions we are evolving for the GeoKB. Both that package and the notebooks may prove useful for other communinities. That package is being built by a contract group engaged in this work and will be spun up in a separate deployable repo soonish.
 
 ## Dependencies
-
 See the environment.yml for a complete Conda environment if you choose to go that route. Primary dependencies here include something that will run Python Notebooks plus the following. Earlier versions of Python should be fine to a certain extent.
 
 * Primary packages
@@ -12,11 +17,9 @@ See the environment.yml for a complete Conda environment if you choose to go tha
     - `pip install wikitextparser`
 
 ## Pywikibot
-
 The interactions from the notebooks in this project use the pywikibot package for interfacing with a Wikibase instance where we are establishing our GeoKB. All edit/write interfaces with Wikibase use bot accounts that are tied to a real user account. The following steps will set all of this up and support notebook-based interactions with the GeoKB.
 
 ### Setup Bot Account(s)
-
 * Go to the Wikibase instance (local or deployed) and navigate to "Special pages" (/Special:SpecialPages)
 * Under Users and rights select "Bot passwords"
 * Log in with your credentials set up for the Wikibase instance
@@ -24,8 +27,7 @@ The interactions from the notebooks in this project use the pywikibot package fo
 
 Note: Need to come back to add some more details on this.
 
-### Setup custom Wikibase family
-
+### Setup custom Wikibase family\
 With pywikibot, you need to create a "family" for the custom Wikibase instance where you will be setting up the GeoKB. By default, pywikibot only knows about all of the Wikimedia Commons components (Wikipedia, Wikidata, etc.) and their test and production environments. We need to set up a config for our own instance(s).
 
 1. Create `<family-filename>` family using command `pwb generate_family_file`
@@ -35,7 +37,6 @@ With pywikibot, you need to create a "family" for the custom Wikibase instance w
 This will create a "families" in your project with a necessary config Python file that can be modified with additional core functions (more on that later).
 
 ### Generate user files
-
 Now, we need to set up how pywikibot will authenticate to the custom "family" (our Wikibase instance).
 
 1. Ensuring that you are in the same directory with the "families" folder generated in the previous step, create user config and password files with command `pwb generate_user_files`
@@ -49,3 +50,5 @@ Now, we need to set up how pywikibot will authenticate to the custom "family" (o
 9. Take the defaults (None) for the last two questions
 10. Change user-config file to read only by running `chmod 0444 user-config.py`
 11. Test the connection by running `pwb login`. You may see a couple of warnings related to deprecated methods, but you will see a "Logged in on `<family name>`:en as `<user name>`" message at the end if successful.
+
+
