@@ -1,7 +1,7 @@
+import os
 import pywikibot as pwb
 import pandas as pd
-from SPARQLWrapper import SPARQLWrapper, JSON
-from nested_lookup import nested_lookup
+import requests
 from datetime import datetime
 
 ### SPARQL Queries
@@ -40,33 +40,45 @@ SELECT ?property ?propertyLabel ?propertyDescription ?propertyAltLabel WHERE {
  """
 
 
-def sparql_query(endpoint: str, output: str, query: str):
-    sparql = SPARQLWrapper(endpoint)
-    sparql.setReturnFormat(JSON)
+def sparql_query(endpoint: str, query: str, output: str = 'raw'):
+    r = requests.get(
+        endpoint, 
+        params = {'format': 'json', 'query': query}
+    )
 
-    sparql.setQuery(query)
-    results = sparql.queryAndConvert()
+    if r.status_code != 200:
+        return
+    
+    try:
+        json_results = r.json()
+    except Exception as e:
+        return
+
+    wd_countries = pd.DataFrame(r.json()['results']['bindings'])
 
     if output == 'raw':
-        return results
-    elif output == 'dataframe':
-        names = results["head"]["vars"]
-        data = []
-        for name in names:
-            property_value = nested_lookup('value', nested_lookup(name, results['results']['bindings']))
-            if not property_value:
-                data.append(None)
-            else:
-                data.append(property_value)
+        return json_results
+    else:
+        data_records = []
+        var_names = json_results['head']['vars']
 
-        return pd.DataFrame.from_dict(dict(zip(names, data)))
+        for record in json_results['results']['bindings']:
+            data_record = {}
+            for var_name in var_names:
+                data_record[var_name] = record[var_name]['value'] if var_name in record else None
+            data_records.append(data_record)
+        
+        if output == 'dataframe':
+            return pd.DataFrame(data_records)
+        else:
+            return data_records
 
 def get_wb(site_name: str, language='en'):
     site = pwb.Site(language, site_name)
     site.login()
     return site
 
-def check_item_label(labels: dict, sparql_endpoint: str, response: str = 'id'):
+def check_item_label(labels: dict, sparql_endpoint: str = os.environ['SPARQL_ENDPOINT'], response: str = 'id'):
     label = labels['en']
 
     query_string = query_by_item_label(label=label)
@@ -152,7 +164,7 @@ def edit_descriptions(site: pwb.APISite, entity_id: str, descriptions: dict, pro
         descriptions=descriptions,
         summary=prov_statement,
     )
-    return entity.get()
+    # return entity.get()
 
 def edit_aliases(site: pwb.APISite, entity_id: str, aliases: dict, prov_statement: str):
     entity = get_entity(
@@ -167,14 +179,15 @@ def edit_aliases(site: pwb.APISite, entity_id: str, aliases: dict, prov_statemen
         aliases=aliases,
         summary=prov_statement,
     )
-    return entity.get()
+    # return entity.get()
 
 def process_item(
         site: pwb.APISite, 
         label: str, 
         prov_statement: str,
         description: str = None, 
-        aliases: list = []
+        aliases: list = [],
+        claims: list = []
     ):
 
     # Assume English language for now
@@ -188,7 +201,7 @@ def process_item(
     if not check_item:
         entity_id = edit_labels(
             site=site,
-            labels={'en': 'copper'},
+            labels=label_dict,
             prov_statement=prov_statement,
             entity_type='item'
         )
@@ -197,8 +210,11 @@ def process_item(
     else:
         entity_id = check_item['item']['value'].split('/')[-1]
         missing_description = description if description != check_item['itemDescription']['value'] else None
-        existing_aliases = [i.strip() for i in check_item['itemAltLabel']['value'].split(',')]
-        missing_aliases = list(set(aliases) - set(existing_aliases))
+        if 'itemAltLabel' in check_item:
+            existing_aliases = [i.strip() for i in check_item['itemAltLabel']['value'].split(',')]
+            missing_aliases = list(set(aliases) - set(existing_aliases))
+        else:
+            missing_aliases = aliases
 
     if missing_description:
         edit_descriptions(
@@ -212,9 +228,19 @@ def process_item(
         edit_aliases(
             site=site,
             entity_id=entity_id,
-            aliases={'en': ['Cu','Copper']},
+            aliases={'en': missing_aliases},
             prov_statement=f'Adding aliases for {label}'
         )
+
+    if claims:
+        for claim in claims:
+            add_claim(
+                site=site,
+                subject_item_id=entity_id,
+                property_id=claim['property_id'],
+                claim_value=claim['object'],
+                prov_statement=claim['prov_statement']
+            )
 
 # Still problematic here with ItemPage.get() after adding claims
 def add_claim(site: pwb.APISite, subject_item_id: str, property_id: str, claim_value: str, prov_statement: str):
@@ -222,8 +248,14 @@ def add_claim(site: pwb.APISite, subject_item_id: str, property_id: str, claim_v
 
     # Establish connection to item
     subject_item = pwb.ItemPage(repo, subject_item_id)
-    if not subject_item.exists():
-        raise ValueError(f'Item does not exist: {subject_item_id}')
+    # if not subject_item.exists():
+    #     raise ValueError(f'Item does not exist: {subject_item_id}')
+
+    # try:
+    #     subject_item.exists()
+    # except Exception as e:
+    #     print("Can't complete. Claims must already exist on item.")
+    #     return
     
     # Establish connection to property
     property_item = pwb.PropertyPage(repo, property_id)
@@ -232,22 +264,18 @@ def add_claim(site: pwb.APISite, subject_item_id: str, property_id: str, claim_v
         subject_claim = pwb.Claim(repo, property_id)
     except Exception as e:
         raise ValueError(f'Property does not exist: {property_id}')
-    
+
     if property_datatype == 'wikibase-item':
         # Get item target and verify exists
         claim_object = pwb.ItemPage(repo, claim_value)
-        if not claim_object.exists():
-            raise ValueError(f"Object item does not exist: {claim_value}")
+        # if not claim_object.exists():
+        #     raise ValueError(f"Object item does not exist: {claim_value}")
     else:
-        # Need to handle other cases where we property test/format an appropriate claim_target response
-        return
+        claim_object = claim_value
 
     # Set the target for the claim
     subject_claim.setTarget(claim_object)
     # Need to handle additional work of adding references and qualifiers
 
     # Commit the claim to wikibase
-    try:
-        subject_item.addClaim(subject_claim, summary=prov_statement)
-    except Exception as e:
-        raise ValueError("Claim already exists")
+    subject_item.addClaim(subject_claim, summary=prov_statement)
