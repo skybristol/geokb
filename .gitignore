@@ -15,4 +15,4 @@ response.json
 **/*.pyc
 **/*.zip
 **/mrds.csv
-**/families
+**/families/*
