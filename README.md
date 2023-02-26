@@ -21,11 +21,17 @@ Other routes we are exploring will take advantage of the longstanding QuickState
 We are iteratively working to build our abstracted functionality in a deployable Python package based on the pywikibot package that impose the rules and conventions we are evolving for the GeoKB. Both that package and the notebooks may prove useful for other communinities. That package is being built by a contract group engaged in this work and will be spun up in a separate deployable repo soonish.
 
 ## Dependencies
-See the environment.yml for a complete Conda environment if you choose to go that route. Primary dependencies here include something that will run Python Notebooks plus the following. Earlier versions of Python should be fine to a certain extent.
+See the environment.yml for a complete Conda environment if you choose to go that route. My environment is built on a Python 3.11 base with Anaconda. You can build it however you want, though, and other versions of the basic dependencies should work. 
 
-* Primary packages
-    - `pip install pywikibot`
-    - `pip install wikitextparser`
+### Primary packages
+
+* Jupyter (pick your flavor for running ipynb Notebooks)
+* pywikibot (PyPi) - primary API into a Wikibase instance
+* requests (CondaForge) - primary means of interfacing with SPARQL service from Wikibase and other HTTP REST
+* pyzotero (PyPi) - API for Zotero
+* sec-api (PyPi) - API for SEC EDGAR
+
+I also use Pandas and GeoPandas along with a handful of other custom packages. You can go a different route on data handling if you'd like.
 
 ## Pywikibot
 The interactions from the notebooks in this project use the pywikibot package for interfacing with a Wikibase instance where we are establishing our GeoKB. All edit/write interfaces with Wikibase use bot accounts that are tied to a real user account. The following steps will set all of this up and support notebook-based interactions with the GeoKB.
