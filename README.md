@@ -6,6 +6,12 @@ Over time, we will likely develop the following types of bots:
 * Bots designed to handle the inner workings of the GeoKB from the initialization of properties and classifiers to the introduction of claims that arise from other things showing up in the knowledgebase
 * Bots that handle the regularized production of different kinds of output transformations from the GeoKB such as generating geospatial databases and spinning up online GIS services
 
+## The Notebooks
+
+* Initialize GeoKB - works through the process of initializing a new knowledgebase (and occasionally updating) with the foundational properties and top-level classification items that will form the "instance of" classification of core items in the knowledgebase
+* GeoArchive (Zotero) - explores how we map documents stored in the Zotero part of our GeoArchive work to GeoKB items and claims
+* SEC Companies/Filings - explores using the SEC EDGAR API to identify companies involved in mining and mineral exploration and relevant filings we need to identify and process for claims about mineral exploration history
+
 ## Other Methods
 Bots, whether built in notebook form or some other packaging, are one method of handling more routine or regular input to the GeoKB. We'll use these for cases where we need to process an entire source over and over again to incorporate new records and updates or to reprocess information into a new knowledge encoding.
 
