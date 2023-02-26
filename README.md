@@ -38,7 +38,7 @@ The interactions from the notebooks in this project use the pywikibot package fo
 
 Note: Need to come back to add some more details on this.
 
-### Setup custom Wikibase family\
+### Setup custom Wikibase family
 With pywikibot, you need to create a "family" for the custom Wikibase instance where you will be setting up the GeoKB. By default, pywikibot only knows about all of the Wikimedia Commons components (Wikipedia, Wikidata, etc.) and their test and production environments. We need to set up a config for our own instance(s).
 
 1. Create `<family-filename>` family using command `pwb generate_family_file`
@@ -62,4 +62,7 @@ Now, we need to set up how pywikibot will authenticate to the custom "family" (o
 10. Change user-config file to read only by running `chmod 0444 user-config.py`
 11. Test the connection by running `pwb login`. You may see a couple of warnings related to deprecated methods, but you will see a "Logged in on `<family name>`:en as `<user name>`" message at the end if successful.
 
+# Disclaimer
+
+This software is preliminary or provisional and is subject to revision. It is being provided to meet the need for timely best science. The software has not received final approval by the U.S. Geological Survey (USGS). No warranty, expressed or implied, is made by the USGS or the U.S. Government as to the functionality of the software and related material nor shall the fact of release constitute any such warranty. The software is provided on the condition that neither the USGS nor the U.S. Government shall be held liable for any damages resulting from the authorized or unauthorized use of the software.
 
