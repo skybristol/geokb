@@ -26,15 +26,20 @@ See the environment.yml for a complete Conda environment if you choose to go tha
 ### Primary packages
 
 * Jupyter (pick your flavor for running ipynb Notebooks)
-* pywikibot (PyPi) - primary API into a Wikibase instance
+* WikibaseIntegrator (PyPi) - primary API into a Wikibase instance
 * requests (CondaForge) - primary means of interfacing with SPARQL service from Wikibase and other HTTP REST
 * pyzotero (PyPi) - API for Zotero
 * sec-api (PyPi) - API for SEC EDGAR
 
 I also use Pandas and GeoPandas along with a handful of other custom packages. You can go a different route on data handling if you'd like.
 
-## Pywikibot
-The interactions from the notebooks in this project use the pywikibot package for interfacing with a Wikibase instance where we are establishing our GeoKB. All edit/write interfaces with Wikibase use bot accounts that are tied to a real user account. The following steps will set all of this up and support notebook-based interactions with the GeoKB.
+## Authentication and Bot Accounts
+
+For GeoKB purposes, a bot account represents not only a means of connecting with the system to do stuff but an important aspect of provenance. A bot is responsible for doing something specific, once or over a duration. Everything that happens in a Wikibase instance is recorded in history, which is accessible through the API (and UI) for reasoning and making judgments about the viability of information for use.
+
+While we can flag a normal user account as a bot account in Wikibase, the convention of having a real person responsible for a bot is quite useful. Sure, we'll have bots operating independently on schedules or other triggers using Lambdas or other technologies over time, but there should be a real person who stands behind the actions of every bot.
+
+Bots should be specific to a logical set of tasks. Creative names are fine, but we should try to use things that are reasonably short and descriptive so when they show up in provenance as actors, we have a clue about what they might have been up to.
 
 ### Setup Bot Account(s)
 * Go to the Wikibase instance (local or deployed) and navigate to "Special pages" (/Special:SpecialPages)
@@ -42,31 +47,32 @@ The interactions from the notebooks in this project use the pywikibot package fo
 * Log in with your credentials set up for the Wikibase instance
 * You'll see a list of any existing bot names. You can navigate to one to reset a password as needed. Otherewise, use "Create a new bot password" and give your bot a reasonable name for what it will be doing.
 
-Note: Need to come back to add some more details on this.
+Note: We need to come back to this with more guidance on bot permissions once we figure all that out.
 
-### Setup custom Wikibase family
-With pywikibot, you need to create a "family" for the custom Wikibase instance where you will be setting up the GeoKB. By default, pywikibot only knows about all of the Wikimedia Commons components (Wikipedia, Wikidata, etc.) and their test and production environments. We need to set up a config for our own instance(s).
+## WikibaseIntegrator
+After struggling for a while using pywikibot as an approach to connecting with the Wikibase APIs, I went another route with WikibaseIntegrator. It got me past an issue I kept having with claims, which was probably operator error, but it also offers a much more straightforward method for connecting to a Wikibase instance. I also find its syntax much easier to follow and implement.
 
-1. Create `<family-filename>` family using command `pwb generate_family_file`
-2. Please insert URL to wiki: `<url to wikibase instance, localhost or deployed>` 
-3. Please insert a short name (eg: freeciv): `<some logical short name like geokb>`
+### Configuring WBI
 
-This will create a "families" in your project with a necessary config Python file that can be modified with additional core functions (more on that later).
+The following three variables need to be set for connecting to a specific Wikibase instance:
 
-### Generate user files
-Now, we need to set up how pywikibot will authenticate to the custom "family" (our Wikibase instance).
+```python
+from wikibaseintegrator.wbi_config import config as wbi_config
 
-1. Ensuring that you are in the same directory with the "families" folder generated in the previous step, create user config and password files with command `pwb generate_user_files`
-2. You will see a list of wiki families starting with "commons." Your custom family name generated in the previous step should be near the top. Put in the number for the custom family.
-3. Depending on how you setup multi language support, you may need to respond differently to the language site code - default is en.
-4. Specify your personal user name on the wikibase instance under which you created the bot password.
-5. Don't worry about adding any other projects unless you have something else going on.
-6. 'Do you want to add a BotPassword for `<user name>`?' `y`
-7. 'BotPassword's "bot name" for `<user name>`:' `<what you used when you set up the bot account>`
-8. 'BotPassword's "password" for "init-bot" (no characters will be shown):' `<copy and paste the password provided in the Wikibase GUI when you created the bot password>`
-9. Take the defaults (None) for the last two questions
-10. Change user-config file to read only by running `chmod 0444 user-config.py`
-11. Test the connection by running `pwb login`. You may see a couple of warnings related to deprecated methods, but you will see a "Logged in on `<family name>`:en as `<user name>`" message at the end if successful.
+wbi_config['MEDIAWIKI_API_URL'] = '' # Generally something like the base domain with /w/api.php in the path
+wbi_config['SPARQL_ENDPOINT_URL'] = '' # Depends on the configuration of the WQDS component in the stack
+wbi_config['WIKIBASE_URL'] = '' # Generally the base domain of the MediaWiki instance
+```
+
+It's a good practice to set these variables in the Python environment and pull them in from there to configure WBI.
+
+### Authenticating WBI
+
+OAuth authentication is probably most secure, but I'm currently just storing individual bot names and passwords needed for specific operations as environment variables and using simple user/password authentication with wikibaseintegrator.wbi_login. Bot names are passed in as `<real user>@<bot name>`.
+
+## Packaging Functional Code
+
+As we work out overall methodology, there will be certain common operations and procedures that would be useful to have in an abstracted package we can import into processing workflows. Over time, we may start much of that within a given notebook, move functions to a local import, and then engineer to a deployable package as another project.
 
 # Disclaimer
 
