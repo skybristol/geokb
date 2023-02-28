@@ -3,6 +3,7 @@ import pywikibot as pwb
 import pandas as pd
 import requests
 from datetime import datetime
+import json
 
 ### SPARQL Queries
 def query_by_item_label(label: str, include_aliases: bool = True) -> str:
@@ -78,6 +79,29 @@ def get_wb(site_name: str, language='en'):
     site.login()
     return site
 
+def establish_item(site: pwb.APISite, label: str, sparql_endpoint: str):
+    query_string = query_by_item_label(label=label)
+
+    query_results = sparql_query(
+        endpoint=sparql_endpoint,
+        output='raw',
+        query=query_string
+    )
+
+    if not query_results["results"]["bindings"]:
+        return pwb.ItemPage(site.data_repository())
+
+    if len(query_results["results"]["bindings"]) > 1:
+        raise ValueError(f"More than one item with the label: {label}")
+    
+    item_id = query_results["results"]["bindings"][0]["item"]["value"].split('/')[-1]
+    return pwb.ItemPage(site.data_repository(), item_id)
+
+def create_item(site: pwb.APISite, label: str, prov_statement: str):
+    new_item = pwb.ItemPage(site.data_repository())
+    new_item.editLabels({'en': label}, summary=prov_statement)
+    return new_item.getID()
+
 def check_item_label(labels: dict, sparql_endpoint: str = os.environ['SPARQL_ENDPOINT'], response: str = 'id'):
     label = labels['en']
 
@@ -99,6 +123,78 @@ def check_item_label(labels: dict, sparql_endpoint: str = os.environ['SPARQL_END
         return query_results["results"]["bindings"][0]["item"]["value"].split('/')[-1]
 
     return query_results["results"]["bindings"][0]
+
+def new_property(site: pwb.APISite, datatype:str, label: str, description: str, prov_statement: str) -> str:
+    prop_package = {
+                'datatype': datatype,
+                'descriptions': {
+                    'en': {
+                        'language': 'en',
+                        'value': description
+                    }
+                },
+                'labels': {
+                    'en': {
+                        'language': 'en',
+                        'value': label
+                    }
+                }
+            }
+
+    prop_params = {
+        'action': 'wbeditentity',
+        'new': 'property',
+        'data': json.dumps(prop_package),
+        'summary': prov_statement,
+        'token': site.tokens['csrf']
+    }
+
+    req = site.simple_request(**prop_params)
+    results = req.submit()
+
+    if isinstance(results, dict) and 'entity' in results and 'id' in results['entity']:
+        return results['entity']['id']
+    else:
+        return results
+
+def new_item(site: pwb.APISite, label: str, description: str, prov_statement: str, aliases: list = []) -> str:
+    item_package = {
+                'descriptions': {
+                    'en': {
+                        'language': 'en',
+                        'value': description
+                    }
+                },
+                'labels': {
+                    'en': {
+                        'language': 'en',
+                        'value': label
+                    }
+                }
+            }
+    if aliases:
+        item_package['aliases'] = {
+            'en': {
+                'language': 'en',
+                'value': aliases
+            }
+        }
+
+    item_params = {
+        'action': 'wbeditentity',
+        'new': 'item',
+        'data': json.dumps(item_package),
+        'summary': prov_statement,
+        'token': site.tokens['csrf']
+    }
+
+    req = site.simple_request(**item_params)
+    results = req.submit()
+
+    if isinstance(results, dict) and 'entity' in results and 'id' in results['entity']:
+        return results['entity']['id']
+    else:
+        return results
 
 def get_entity(
         site: pwb.APISite, 
@@ -164,7 +260,7 @@ def edit_descriptions(site: pwb.APISite, entity_id: str, descriptions: dict, pro
         descriptions=descriptions,
         summary=prov_statement,
     )
-    # return entity.get()
+    return entity.get()
 
 def edit_aliases(site: pwb.APISite, entity_id: str, aliases: dict, prov_statement: str):
     entity = get_entity(
@@ -179,7 +275,7 @@ def edit_aliases(site: pwb.APISite, entity_id: str, aliases: dict, prov_statemen
         aliases=aliases,
         summary=prov_statement,
     )
-    # return entity.get()
+    return entity.get()
 
 def process_item(
         site: pwb.APISite, 
