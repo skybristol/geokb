@@ -72,3 +72,15 @@ def sparql_query(endpoint: str, query: str, output: str = 'raw'):
         else:
             return data_records
 
+def property_lookup(endpoint=os.environ["SPARQL_ENDPOINT_URL"]):
+    geokb_properties = sparql_query(
+        endpoint=endpoint,
+        query=property_query,
+        output='dict'
+    )
+
+    ref_geokb_properties = {}
+    for p in geokb_properties:
+        ref_geokb_properties[p['propertyLabel']] = p['property'].split('/')[-1]
+
+    return ref_geokb_properties
