@@ -72,7 +72,7 @@ def sparql_query(endpoint: str, query: str, output: str = 'raw'):
         else:
             return data_records
 
-def property_lookup(endpoint=os.environ["SPARQL_ENDPOINT_URL"]):
+def property_lookup(endpoint):
     geokb_properties = sparql_query(
         endpoint=endpoint,
         query=property_query,
