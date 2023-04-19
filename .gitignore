@@ -16,3 +16,5 @@ response.json
 **/*.zip
 **/mrds.csv
 **/families/*
+**/data/*
+.DS_Store

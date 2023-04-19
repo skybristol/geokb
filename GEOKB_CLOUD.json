@@ -1,0 +1,9 @@
+{
+    "GEOKB_CLOUD": {
+        "queries": {
+            "properties": "SELECT%20%3Fproperty%20%3FpropertyLabel%20%3Fproperty_type%20WHERE%20%7B%0A%20%20%3Fproperty%20a%20wikibase%3AProperty%20.%0A%20%20%3Fproperty%20wikibase%3ApropertyType%20%3Fproperty_type%20.%0A%20%20SERVICE%20wikibase%3Alabel%20%7B%20bd%3AserviceParam%20wikibase%3Alanguage%20%22en%22%20.%20%7D%0A%7D%0A",
+            "classes": "PREFIX%20wdt%3A%20%3Chttps%3A%2F%2Fgeokb.wikibase.cloud%2Fprop%2Fdirect%2F%3E%0A%0ASELECT%20%3Fclass%20%3FclassLabel%20%0AWHERE%20%7B%0A%20%20%3Fclass%20wdt%3AP2%20%3Fsubclass.%0A%20%20SERVICE%20wikibase%3Alabel%20%7B%20bd%3AserviceParam%20wikibase%3Alanguage%20%22en%22%20.%20%7D%0A%7D%0A",
+            "references": "PREFIX%20wd%3A%20%3Chttps%3A%2F%2Fgeokb.wikibase.cloud%2Fentity%2F%3E%0APREFIX%20wdt%3A%20%3Chttps%3A%2F%2Fgeokb.wikibase.cloud%2Fprop%2Fdirect%2F%3E%0A%0ASELECT%20%3Fref_source%20%3Fref_sourceLabel%20%3Fref_sourceDescription%20%3Fref_sourceAltLabel%20%3Fsource_typesLabel%0AWHERE%20%7B%0A%20%20%3Fref_source%20wdt%3AP1%20wd%3AQ26267%20.%0A%20%20SERVICE%20wikibase%3Alabel%20%7B%20bd%3AserviceParam%20wikibase%3Alanguage%20%22en%22%20.%20%7D%0A%7D%0A"
+        }
+    }
+}
