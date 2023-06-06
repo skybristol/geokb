@@ -7,7 +7,8 @@ from urllib.parse import parse_qs
 from wikibaseintegrator.wbi_config import config as wbi_config
 from wikibaseintegrator import WikibaseIntegrator, wbi_login
 from wikibaseintegrator import models, datatypes
-from wikibaseintegrator.wbi_enums import WikibaseDatatype
+from wikibaseintegrator.wbi_enums import WikibaseDatatype, ActionIfExists, WikibaseDatePrecision
+from sqlalchemy import create_engine
 
 class WikibaseConnection:
     def __init__(
@@ -43,6 +44,8 @@ class WikibaseConnection:
         self.models = models
         self.datatypes = datatypes
         self.wbi_data_types = WikibaseDatatype
+        self.action_if_exists = ActionIfExists
+        self.date_precision = WikibaseDatePrecision
 
         # Establish authentication connection to instance
         if authenticate:
@@ -57,8 +60,6 @@ class WikibaseConnection:
             config_file = json.load(open(f'{bot_name}.json', 'r'))
             self.config = config_file[bot_name]
             self.wb_properties, self.prop_lookup = self.get_properties()
-            self.wb_classes, self.class_lookup = self.get_classes()
-            self.wb_references, self.ref_lookup = self.get_references()
         
     # Parameters
     def sparql_namespaces(self):
@@ -70,10 +71,13 @@ class WikibaseConnection:
         return namespaces
     
     # Core Functions
-    def url_sparql_query(self, sparql_url: str):
+    def url_sparql_query(self, sparql_url: str, output_format: str = 'dict'):
         r = requests.get(sparql_url, headers={'accept': 'application/sparql-results+json'})
         if r.status_code != 200:
             return
+        
+        if output_format == "dataframe":
+            return self.df_sparql_results(json_results=r.json())
         
         return r.json()
     
@@ -286,3 +290,15 @@ class WikibaseConnection:
                 df[k] = v
 
         return df
+    
+    def pg_cnxn(self, db, db_user, db_pass, db_host, db_port):
+        if db_user is None:
+            return
+        try:
+            engine = create_engine(
+                f'postgresql://{db_user}:{db_pass}@{db_host}:{db_port}/{db}'
+            )
+            return engine
+        except Exception as e:
+            print(e)
+            return None
