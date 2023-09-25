@@ -1,0 +1,14 @@
+requests==2.29.0
+urllib3==1.26.5
+pandas
+wikibaseintegrator
+sqlalchemy
+mwclient
+swifter
+python-dotenv
+sec-api
+pyzotero
+jupyter
+ipykernel
+geopandas
+arcgis==1.9.1

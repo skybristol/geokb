@@ -33,6 +33,69 @@ See the environment.yml for a complete Conda environment if you choose to go tha
 
 I also use Pandas and GeoPandas along with a handful of other custom packages. You can go a different route on data handling if you'd like.
 
+## Conda Environment Alternative
+
+Due to possible dependency conflicts, different OS available, or the conda resolver taking longer than it should, an alternative method is proposed. This example will use the virtualenv python environment and create a minimal install that will run these notebooks.
+
+### Installation of Virtual Environment
+
+If it hasn't been installed, run the following command to install the virtualenv python package
+
+```
+python -m pip install virtualenv
+```
+
+Once the installation is finished, we create the `geokb` env and activating it using
+
+```
+virtualenv geokb
+
+source geokb/bin/activate
+```
+(If needed, an existing conda environment can be deactivated using the `conda deactivate` command.)
+
+Now that we are in the isolated `geokb` environment, we can install the necessary  python packages. Run the following command to do so
+
+```
+python -m pip install -r requirements.txt
+```
+
+The `requirements.txt` file is a tentative minimum list of python packages used throughout the repo. This will ensure that the installation processes quickly and the dependency resolver doesn't take too long.
+
+After the packages are installed, create a `.env` file with the following variables filled out 
+
+```
+WB_SPARQL_<bot_name>=
+WB_URL_<bot_name>=
+WB_API_<bot_name>=
+WB_BOT_<bot_name>=
+MEDIAWIKI_API_URL=
+SPARQL_ENDPOINT=
+WIKIBASE_URL=
+WB_BOT_NAME_<bot_name>=
+WB_BOT_PASS_<bot_name>=
+```
+
+where bot_name can be the one specified in your notebook e.g. `GEOKB_CLOUD`.
+
+To create a Juptyer kernel, we can run the command
+
+```
+python -m ipykernel install --user --name=geokb
+```
+
+This will make the virtualenv usable within a Jupyter Notebook as a kernel.
+
+### Troubleshooting
+
+If the environment variables aren't being loaded properly, the following lines can be added to the Jupyter Notebook at the top
+
+```python
+from dotenv import load_dotenv
+
+load_dotenv()
+```
+
 ## Authentication and Bot Accounts
 
 For GeoKB purposes, a bot account represents not only a means of connecting with the system to do stuff but an important aspect of provenance. A bot is responsible for doing something specific, once or over a duration. Everything that happens in a Wikibase instance is recorded in history, which is accessible through the API (and UI) for reasoning and making judgments about the viability of information for use.

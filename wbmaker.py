@@ -1,15 +1,16 @@
-import os
-import requests
-import pandas as pd
 import json
-from urllib.parse import urlparse
-from urllib.parse import parse_qs
-from wikibaseintegrator.wbi_config import config as wbi_config
-from wikibaseintegrator import WikibaseIntegrator, wbi_login
-from wikibaseintegrator import models, datatypes
-from wikibaseintegrator.wbi_enums import WikibaseDatatype, ActionIfExists, WikibaseDatePrecision
-from sqlalchemy import create_engine
+import os
+from urllib.parse import parse_qs, urlparse
+
 import mwclient
+import pandas as pd
+import requests
+from sqlalchemy import create_engine
+from wikibaseintegrator import WikibaseIntegrator, datatypes, models, wbi_login
+from wikibaseintegrator.wbi_config import config as wbi_config
+from wikibaseintegrator.wbi_enums import (ActionIfExists, WikibaseDatatype,
+                                          WikibaseDatePrecision)
+
 
 class WikibaseConnection:
     def __init__(
@@ -66,6 +67,8 @@ class WikibaseConnection:
             config_file = json.load(open(f'{bot_name}.json', 'r'))
             self.config = config_file[bot_name]
             self.wb_properties, self.prop_lookup = self.get_properties()
+            self.wb_classes, self.class_lookup = self.get_classes()
+            self.wb_references, self.ref_lookup = self.get_references()
         
     # Parameters
     def sparql_namespaces(self):
