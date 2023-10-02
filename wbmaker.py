@@ -2,8 +2,7 @@ import os
 import requests
 import pandas as pd
 import json
-from urllib.parse import urlparse
-from urllib.parse import parse_qs
+from urllib.parse import urlparse, parse_qs, quote
 from wikibaseintegrator.wbi_config import config as wbi_config
 from wikibaseintegrator import WikibaseIntegrator, wbi_login
 from wikibaseintegrator import models, datatypes
@@ -34,12 +33,13 @@ class WikibaseConnection:
         # Set basic parameters from env variables we have to know about to start operating
         self.sparql_endpoint = os.environ[f'WB_SPARQL_{bot_name}']
         self.wikibase_url = os.environ[f'WB_URL_{bot_name}']
+        self.bot_user_agent = f'{bot_name}/1.0 ({os.environ[f"WB_URL_{bot_name}"]})'
 
         # WikibaseIntegrator config
         wbi_config['MEDIAWIKI_API_URL'] = os.environ[f'WB_API_{bot_name}']
         wbi_config['SPARQL_ENDPOINT_URL'] = os.environ[f'WB_SPARQL_{bot_name}']
         wbi_config['WIKIBASE_URL'] = os.environ[f'WB_URL_{bot_name}']
-        wbi_config['USER_AGENT'] = f'{bot_name}/1.0 ({os.environ[f"WB_URL_{bot_name}"]})'
+        wbi_config['USER_AGENT'] = self.bot_user_agent
         
         # Instantiate important aspect of WBI for calling from elsewhere
         self.models = models
@@ -58,13 +58,21 @@ class WikibaseConnection:
 
             # Establish site for writing to Mediawiki pages
             site_domain = os.environ[f'WB_URL_{bot_name}'].split("/")[-1]
-            self.mw_site = mwclient.Site(site_domain, path='/w/', scheme='https')
+            self.mw_site = mwclient.Site(
+                site_domain, 
+                path='/w/', 
+                scheme='https', 
+                clients_useragent=self.bot_user_agent
+            )
             self.mw_site.login(username=os.environ[f'WB_BOT_{bot_name}'], password=os.environ[f'WB_BOT_PASS_{bot_name}'])
+            
+        # Set up queries
+        self.property_query = "SELECT%20%3Fproperty%20%3FpropertyLabel%20%3Fproperty_type%20WHERE%20%7B%0A%20%20%3Fproperty%20a%20wikibase%3AProperty%20.%0A%20%20%3Fproperty%20wikibase%3ApropertyType%20%3Fproperty_type%20.%0A%20%20SERVICE%20wikibase%3Alabel%20%7B%20bd%3AserviceParam%20wikibase%3Alanguage%20%22en%22%20.%20%7D%0A%7D%0A"
 
         # Set up configuration details and references        
-        if load_refs and os.path.exists(f'{bot_name}.json'):
-            config_file = json.load(open(f'{bot_name}.json', 'r'))
-            self.config = config_file[bot_name]
+        if load_refs:
+            # config_file = json.load(open(f'{bot_name}.json', 'r'))
+            # self.config = config_file[bot_name]
             self.wb_properties, self.prop_lookup = self.get_properties()
         
     # Parameters
@@ -123,7 +131,11 @@ class WikibaseConnection:
         return df
 
     def get_properties(self):
-        df_props = self.wb_ref_data('properties')
+        query_url = f"{self.sparql_endpoint}?query={self.property_query}"
+        df_props = self.url_sparql_query(
+            sparql_url=query_url,
+            output_format="dataframe"
+        )
         df_props["pid"] = df_props.property.apply(lambda x: x.split("/")[-1])
         df_props["p_type"] = df_props.property_type.apply(lambda x: x.split("#")[-1])
         prop_lookup = self.key_lookup(
@@ -308,3 +320,8 @@ class WikibaseConnection:
         except Exception as e:
             print(e)
             return None
+        
+    def sparql_query_to_url(self, query_str):
+        query_string = quote(query_str).replace('/', '%2F')
+        query_url = f"{self.sparql_endpoint}?query={query_string}"
+        return query_url
