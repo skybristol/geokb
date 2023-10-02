@@ -50,11 +50,11 @@ class WikibaseConnection:
 
         # Establish authentication connection to instance
         if authenticate:
-            login_instance = wbi_login.Login(
+            self.login_instance = wbi_login.Login(
                 user=os.environ[f'WB_BOT_{bot_name}'],
                 password=os.environ[f'WB_BOT_PASS_{bot_name}']
             )
-            self.wbi = WikibaseIntegrator(login=login_instance)
+            self.wbi = WikibaseIntegrator(login=self.login_instance)
 
             # Establish site for writing to Mediawiki pages
             site_domain = os.environ[f'WB_URL_{bot_name}'].split("/")[-1]
