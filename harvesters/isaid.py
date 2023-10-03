@@ -9,6 +9,8 @@ import yaml
 
 
 def staff_profile_scrape(profile_url):
+    if not profile_url.startswith('http'):
+        profile_url = f"https://www.usgs.gov/staff-profiles/{profile_url}"
     r = requests.get(profile_url)
 
     profile = {
@@ -128,6 +130,6 @@ def scrape_and_write_profile(profile, site):
 
     try:
         page = site.pages[profile_cache_page]
-        page.save(yaml_data, summary=f'Added profile data from {profile_url}')
+        page.save(yaml_data, summary=f'Added profile data from {profile_url}'.format(profile_url))
     except Exception as e:
         return e
