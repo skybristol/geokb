@@ -1,0 +1,13 @@
+requests
+pandas
+wikibaseintegrator
+sqlalchemy
+mwclient
+swifter
+python-dotenv
+sec-api
+pyzotero
+jupyter
+ipykernel
+geopandas
+
