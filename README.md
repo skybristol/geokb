@@ -1,37 +1,34 @@
 # GeoKB Notebook-based Bots
-The Geoscience Knowledgebase (GeoKB) is a framework for assembling, organizing, growing, and reasoning (AI) knowledge about the earth system. We are building it on the Wikibase infrastructure to take advantage of tools and techniques already in use across many other domains. Much of the content that flows into the GeoKB comes from existing sources, both static and dynamic. We use bots as one method to build entities and claims, some of which make best sense as computational notebooks. This repository is dedicated to those notebook bots that are foudnational to initializing an GeoKB instance or that are otherwise part of the core development effort.
+The Geoscience Knowledgebase (GeoKB) is a framework for assembling, organizing, growing, and reasoning (AI) knowledge about the earth system and the role of the USGS in studying it. We are building it on the Wikibase infrastructure to take advantage of tools and techniques already in use across many other domains. Much of the content that flows into the GeoKB comes from existing sources, both static and dynamic. We use bots as one method to build entities and claims, starting initially with computational notebooks and moving toward a microservices architecture to maintain the system over time.
 
-Over time, we will likely develop the following types of bots:
+Over time, we will develop the following types of bots:
 * Bots designed to process specific source data and information into the GeoKB (e.g., bring in scientific reference material like journal articles and government reports)
 * Bots designed to handle the inner workings of the GeoKB from the initialization of properties and classifiers to the introduction of claims that arise from other things showing up in the knowledgebase
 * Bots that handle the regularized production of different kinds of output transformations from the GeoKB such as generating geospatial databases and spinning up online GIS services
 
-## The Notebooks
+## Using the tool to build the tool
+One design philosophy we are pursuing is the concept of developing the tool to build and operate itself to the extent possible. In this case, the Wikibase framework gives us a robust and flexible content store that we can use as our data and information backing that code operates with. We are experimenting with a couple specific aspects of this idea:
 
-* [Initialize GeoKB](Initialize GeoKB.ipynb) - works through the process of initializing a new knowledgebase (and occasionally updating) with the foundational properties and top-level classification items that will form the "instance of" classification of core items in the knowledgebase
-* [GeoArchive (Zotero)](GeoArchive - Zotero.ipynb) - explores how we map documents stored in the Zotero part of our GeoArchive work to GeoKB items and claims
-* [SEC Companies/Filings](SEC Companies and Mining Filings.ipynb) - explores using the SEC EDGAR API to identify companies involved in mining and mineral exploration and relevant filings we need to identify and process for claims about mineral exploration history
+* Almost every claim (statement) should have at least one reference indicating where the claim comes from. We have "data source" and "knowledge source" predicates that link a subject claim to an object item. Items as references document pertinent details about source material, and we are working on the schemas for these such that they contain all the necessary configuration details for processing codes to operate with. In many cases, we envision a claim coupling a source data reference with a source code reference, pointing to the encoded algorithm that does the work of processing the source data.
+* We are taking advantage of the Mediawiki foundation for Wikibase and the "discussion" pages that come along with the structured data part of items and properties. We use these for documenting the knowledgebase, similar to how "Property Talk" pages are used in Wikidata (but lacking that detailed structure at this point). But we are also using them as a content store in a couple of specific ways:
+    * Cache of source data when the source is less stable or messy to deal with (e.g., USGS staff profiles that have to be web scraped stored as YAML)
+    * Housing for additional text content such as abstracts and tables of contents for publications that may or may not undergo additional processing to identify linked data and build claims
 
-## Other Methods
-Bots, whether built in notebook form or some other packaging, are one method of handling more routine or regular input to the GeoKB. We'll use these for cases where we need to process an entire source over and over again to incorporate new records and updates or to reprocess information into a new knowledge encoding.
-
-Other routes we are exploring will take advantage of the longstanding QuickStatements tool and related methods to produce QuickStatements encoding through OpenRefine. We are also exploring the use of GIS software where part of the work includes viewing a batch of items in a GIS (via point coordinate location with a property using the globe-coordinate datatype) and doing work on either the geospatial piece or associated property data. These will get fed back into the system via some type of bot action that will incorporate edits, including new items. The GIS part of this will take some additional work as we need to also deal with items in the GeoKB with more complex geometry, likely using a different approach than the Wikidata/Wikimedia Commons connection with the GeoShape datatype.
+## iSAID
+Some of the work from an older project called iSAID is being integrated into the GeoKB. This work dealt with building a graph representation for people, organizations, projects, publications, datasets, and models in the USGS. iSAID was focused on scientific capacity assessment use cases, particularly related to understanding the intersection across scientific disciplines in the USGS. Because we need the public aspects of these same entities in the GeoKB for many other use cases, we are porting that work into this project and refining it to work with the Wikibase model. As we bring this functionality into play, core Python processing logic for public data sources is being built into the isaid.py file that we'll eventually package up as a deployable.
 
 ## Python Package
-We are iteratively working to build our abstracted functionality in a deployable Python package based on the pywikibot package that impose the rules and conventions we are evolving for the GeoKB. Both that package and the notebooks may prove useful for other communinities. That package is being built by a contract group engaged in this work and will be spun up in a separate deployable repo soonish.
+We are iteratively working to build our abstracted functionality in a deployable Python package based on the pywikibot package that impose the rules and conventions we are evolving for the GeoKB. Both that package and the notebooks may prove useful for other communinities. That package is being built by a contract group engaged in this work and will be spun up in a separate deployable repo soonish. In the near term, we have a class in the wbmaker.py file that is evolving to handle connection details and general functionality.
+
+## Other Tools
+Other routes we are exploring will take advantage of the longstanding QuickStatements tool and related methods to produce QuickStatements encoding through OpenRefine. We are also exploring the use of GIS software where part of the work includes viewing a batch of items in a GIS (via point coordinate location with a property using the globe-coordinate datatype) and doing work on either the geospatial piece or associated property data. These will get fed back into the system via some type of bot action that will incorporate edits, including new items. The GIS part of this will take some additional work as we need to also deal with items in the GeoKB with more complex geometry, likely using a different approach than the Wikidata/Wikimedia Commons connection with the GeoShape datatype.
+
+What we've discovered so far is that the knowledge graph needs to get to a particular tipping point where there is enough reference material built into the knowledge representation that many other users can contribute by building links to those items. Each body of concepts that will form objects linked through predicates to subject items being introduced needs to be thought through to a the point where they can be instantiated effectively. We still need to develop an effective operational model for working through these dynamics.
 
 ## Dependencies
-See the environment.yml for a complete Conda environment if you choose to go that route. My environment is built on a Python 3.11 base with Anaconda. You can build it however you want, though, and other versions of the basic dependencies should work. 
+See the environment.yml for a baseline Conda environment if you choose to go that route. My environment is built on a Python 3.11 base with Mamba (lighter weight Conda Forge-backed manager). You can build it however you want, though, and other versions of the basic dependencies should work.
 
-### Primary packages
-
-* Jupyter (pick your flavor for running ipynb Notebooks)
-* WikibaseIntegrator (PyPi) - primary API into a Wikibase instance
-* requests (CondaForge) - primary means of interfacing with SPARQL service from Wikibase and other HTTP REST
-* pyzotero (PyPi) - API for Zotero
-* sec-api (PyPi) - API for SEC EDGAR
-
-I also use Pandas and GeoPandas along with a handful of other custom packages. You can go a different route on data handling if you'd like.
+In some cases, I am running code on cloud-based Jupyter server environments where I need either more processing power or access to specialized data. These include the Microsoft Planetary Computer Hub (Pangeo environment) where I've accessed some of their public datasets like U.S. Census sources and the ESIPLab's Nebari environment where I'm experimenting with processing methods of use to ESIP projects. We also have an internal Pangeo environment for the USGS, but because we are only dealing with public data sources here, there has been no need to work with that internal platform.
 
 ## Authentication and Bot Accounts
 
