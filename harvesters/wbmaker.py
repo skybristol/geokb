@@ -48,6 +48,8 @@ class WikibaseConnection:
         self.action_if_exists = ActionIfExists
         self.date_precision = WikibaseDatePrecision
 
+        self.site_domain = os.environ[f'WB_URL_{bot_name}'].split("/")[-1]
+
         # Establish authentication connection to instance
         if authenticate:
             self.login_instance = wbi_login.Login(
@@ -57,9 +59,8 @@ class WikibaseConnection:
             self.wbi = WikibaseIntegrator(login=self.login_instance)
 
             # Establish site for writing to Mediawiki pages
-            site_domain = os.environ[f'WB_URL_{bot_name}'].split("/")[-1]
             self.mw_site = mwclient.Site(
-                site_domain, 
+                self.site_domain, 
                 path='/w/', 
                 scheme='https', 
                 clients_useragent=self.bot_user_agent
@@ -85,7 +86,7 @@ class WikibaseConnection:
         return namespaces
     
     # Core Functions
-    def url_sparql_query(self, sparql_url: str, output_format: str = 'dict'):
+    def url_sparql_query(self, sparql_url: str, output_format: str = 'dataframe'):
         r = requests.get(sparql_url, headers={'accept': 'application/sparql-results+json'})
         if r.status_code != 200:
             return
@@ -231,7 +232,7 @@ class WikibaseConnection:
         # Extracts QID or PID from the end of a URL-formatted identifier
         return url.split('/')[-1]
         
-    def sparql_query(self, query: str, endpoint: str = None, output: str = 'raw'):
+    def sparql_query(self, query: str, endpoint: str = None, output: str = 'dataframe'):
         # Run SPARQL query against target Wikibase instance of another endpoint
         # Handles some processing of results needed often
         if not endpoint:
