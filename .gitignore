@@ -18,3 +18,4 @@ response.json
 **/families/*
 **/data/*
 .DS_Store
+harvesters/test.ipynb

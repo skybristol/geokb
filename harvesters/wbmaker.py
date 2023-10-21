@@ -56,7 +56,7 @@ class WikibaseConnection:
                 user=os.environ[f'WB_BOT_{bot_name}'],
                 password=os.environ[f'WB_BOT_PASS_{bot_name}']
             )
-            self.wbi = WikibaseIntegrator(login=self.login_instance)
+            self.wbi = WikibaseIntegrator(login=self.login_instance, is_bot=True)
 
             # Establish site for writing to Mediawiki pages
             self.mw_site = mwclient.Site(
