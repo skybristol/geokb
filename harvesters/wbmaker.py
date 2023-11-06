@@ -326,3 +326,14 @@ class WikibaseConnection:
         query_string = quote(query_str).replace('/', '%2F')
         query_url = f"{self.sparql_endpoint}?query={query_string}"
         return query_url
+
+    def df_from_graph(self, query_results):
+        rows = []
+        for row in query_results:
+            record = {}
+            for i, prop in enumerate([str(i) for i in query_results.vars]):
+                record[prop] = str(row[i])
+            rows.append(record)
+
+        # Convert to a pandas dataframe
+        return pd.DataFrame(rows)
