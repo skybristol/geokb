@@ -6,7 +6,68 @@ from bs4 import BeautifulSoup
 import unicodedata
 import re
 import yaml
+from urllib.parse import urlparse, parse_qs, unquote
 
+# We need to get the range of pages to scrape
+def last_page(profile_inventory_url):
+    r_profile_inventory = requests.get(profile_inventory_url)
+    soup_profile_inventory = BeautifulSoup(r_profile_inventory.content, 'html.parser')
+    last_page_link = soup_profile_inventory.find('a', {'title': 'Go to last page'})['href']
+    if not last_page_link:
+        return
+
+    last_page_url = "".join([profile_inventory_url, last_page_link])
+    parsed_url = urlparse(last_page_url)
+    query_params = parse_qs(parsed_url.query)
+    last_page_num = query_params.get("page")
+    if last_page_num:
+        return int(last_page_num[0])
+
+# Scrape an inventory page of up to 12 entries and return a list of dicts
+def get_inventory_page(page_num):
+    inventory_url = f'https://www.usgs.gov/connect/staff-profiles?node_staff_profile_type%5B141721%5D=141721&node_staff_profile_type%5B141730%5D=141730&node_staff_profile_type%5B141727%5D=141727&node_staff_profile_type%5B141728%5D=141728&node_staff_profile_type%5B141726%5D=141726&node_staff_profile_type%5B141722%5D=141722&node_staff_profile_type%5B141723%5D=141723&node_staff_profile_type%5B141719%5D=141719&node_staff_profile_type%5B141718%5D=141718&node_staff_profile_type%5B141759%5D=141759&node_staff_profile_type%5B141729%5D=141729&node_staff_profile_type%5B141717%5D=141717&node_staff_profile_type%5B141725%5D=141725&node_staff_profile_type%5B141745%5D=141745&node_staff_profile_type%5B141724%5D=141724&node_staff_profile_type%5B141720%5D=141720&node_staff_profile_type%5B141716%5D=141716&node_staff_profile_type_1=All&node_topics=All&items_per_page=12&node_states=&search_api_fulltext=&page={str(page_num)}'
+    r = requests.get(inventory_url)
+    if r.status_code != 200:
+        return None
+
+    soup = BeautifulSoup(r.text, 'html.parser')
+    staff_profiles = soup.find_all('div', class_='grid-staff-profile')
+    if not staff_profiles:
+        return None
+
+    staff = []
+    for profile in staff_profiles:
+        links = [(l.get('href').replace('/index.php', ''), l.text.strip()) for l in profile.find_all('a')]
+        staff_profile_link = next((l for l in links if l[0].startswith('/staff-profiles/')), None)
+        if not staff_profile_link:
+            print(profile)
+            continue
+        person = {
+            'date': datetime.now().isoformat(),
+            'page_num': page_num,
+            'name': staff_profile_link[1],
+            'profile': staff_profile_link[0],
+            'affiliations': []
+        }
+        email_link = next((l for l in links if l[0].startswith('mailto')), None)
+        if email_link:
+            person['email'] = email_link[0].split(':')[-1].strip()
+        tel_link = next((l for l in links if l[0].startswith('tel')), None)
+        if tel_link:
+            person['telephone'] = unquote(tel_link[0].split(':')[-1].strip())
+        person['affiliations'].extend([{'url': l[0], 'name': l[1]} for l in links if not l[0].startswith(('/staff-profiles/', 'mailto', 'tel'))])
+        person['titles'] = [i.text.strip() for i in profile.find_all('div', class_='field-title')]
+        staff.append(person)
+
+    return staff
+
+# Combine all lists returned in parallel processing into one with unique values
+def inventory_list(inventories):
+    inventory_records = []
+    for i in inventories:
+        inventory_records.extend(i)
+
+    return inventory_records
 
 def staff_profile_scrape(profile_url):
     if not profile_url.startswith('http'):
