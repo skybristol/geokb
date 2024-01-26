@@ -9,6 +9,7 @@ from wikibaseintegrator import models, datatypes
 from wikibaseintegrator.wbi_enums import WikibaseDatatype, ActionIfExists, WikibaseDatePrecision
 from sqlalchemy import create_engine
 import mwclient
+import logging
 
 class WikibaseConnection:
     def __init__(
@@ -337,3 +338,39 @@ class WikibaseConnection:
 
         # Convert to a pandas dataframe
         return pd.DataFrame(rows)
+
+
+class LastMessageHandler(logging.Handler):
+    def __init__(self):
+        super().__init__()
+        self.last_message = ''
+
+    def emit(self, record):
+        self.last_message = self.format(record)
+
+
+class Logger():
+    def __init__(self, name='logger', log_dir='../logs/'):
+        self.name = name
+        self.logger = logging.getLogger(self.name)
+        self.logger.setLevel(logging.INFO)
+
+        if not self.logger.hasHandlers():
+            os.makedirs(log_dir, exist_ok=True)
+            file_handler = self.add_file_handler(log_dir)
+            self.logger.addHandler(file_handler)
+            self.last_message_handler = LastMessageHandler()
+            self.logger.addHandler(self.last_message_handler)
+
+    def add_file_handler(self, log_dir):
+        file_handler = logging.FileHandler(os.path.join(log_dir, f'{self.name}.log'))
+        file_handler.setLevel(logging.INFO)
+        file_handler.setFormatter(logging.Formatter('%(levelname)s - %(asctime)s - %(name)s - %(funcName)s - %(message)s'))
+
+        return file_handler
+
+    def get_logger(self):
+        return self.logger
+
+    def get_last_message(self):
+        return self.last_message_handler.last_message

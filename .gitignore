@@ -17,6 +17,7 @@ response.json
 **/mrds.csv
 **/families/*
 **/data/*
+**/logs/*
 .DS_Store
 harvesters/test.ipynb
 harvesters/test2.ipynb
