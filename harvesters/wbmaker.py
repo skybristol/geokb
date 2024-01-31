@@ -9,7 +9,9 @@ from wikibaseintegrator import models, datatypes
 from wikibaseintegrator.wbi_enums import WikibaseDatatype, ActionIfExists, WikibaseDatePrecision
 from sqlalchemy import create_engine
 import mwclient
-import logging
+import redis
+from datetime import datetime
+import inspect
 
 class WikibaseConnection:
     def __init__(
@@ -87,6 +89,18 @@ class WikibaseConnection:
         return namespaces
     
     # Core Functions
+    def property_by_name(self, property_name):
+        search_url = f"{self.wikibase_url}/w/api.php?action=wbsearchentities&search={property_name}&type=property&format=json"
+        results = requests.get(search_url).json()
+
+        if len(results['search']) != 1:
+            return None
+        
+        return {
+            'pid': results['search'][0]['id'],
+            'datatype': results['search'][0]['datatype']
+        }
+
     def url_sparql_query(self, sparql_url: str, output_format: str = 'dataframe'):
         r = requests.get(sparql_url, headers={'accept': 'application/sparql-results+json'})
         if r.status_code != 200:
@@ -340,37 +354,52 @@ class WikibaseConnection:
         return pd.DataFrame(rows)
 
 
-class LastMessageHandler(logging.Handler):
-    def __init__(self):
-        super().__init__()
-        self.last_message = ''
+class MessageQueue:
+    def __init__(self, host=os.environ['REDIS_HOST'], port=int(os.environ['REDIS_PORT']), db=0, queue='queue'):
+        self.redis = redis.Redis(host=host, port=port, db=db)
+        self.queue = queue
 
-    def emit(self, record):
-        self.last_message = self.format(record)
+    def message_up(self, message):
+        self.redis.rpush(self.queue, json.dumps(message))
+
+    def message_down(self):
+        message = self.redis.lpop(self.queue).decode()
+        try:
+            return json.loads(message)
+        except:
+            return message
+    
+    def queue_length(self):
+        return self.redis.llen(self.queue)
 
 
-class Logger():
-    def __init__(self, name='logger', log_dir='../logs/'):
-        self.name = name
-        self.logger = logging.getLogger(self.name)
-        self.logger.setLevel(logging.INFO)
+class RedisLogger:
+    def __init__(self, host=os.environ['REDIS_HOST'], port=int(os.environ['REDIS_PORT']), db=0, log_list='log'):
+        self.redis = redis.Redis(host=host, port=port, db=db)
+        self.log_list = log_list
 
-        if not self.logger.hasHandlers():
-            os.makedirs(log_dir, exist_ok=True)
-            file_handler = self.add_file_handler(log_dir)
-            self.logger.addHandler(file_handler)
-            self.last_message_handler = LastMessageHandler()
-            self.logger.addHandler(self.last_message_handler)
+    def current_function_name():
+        return inspect.currentframe().f_back.f_code.co_name
 
-    def add_file_handler(self, log_dir):
-        file_handler = logging.FileHandler(os.path.join(log_dir, f'{self.name}.log'))
-        file_handler.setLevel(logging.INFO)
-        file_handler.setFormatter(logging.Formatter('%(levelname)s - %(asctime)s - %(name)s - %(funcName)s - %(message)s'))
+    def log(self, message, level='info'):
+        # Create a log message as a dictionary
+        log_message = {
+            'timestamp': datetime.utcnow().isoformat(),
+            'level': level,
+            'message': message,
+        }
 
-        return file_handler
+        # Serialize the log message to a JSON string
+        log_message_json = json.dumps(log_message)
 
-    def get_logger(self):
-        return self.logger
+        # Push the log message onto the Redis list
+        self.redis.rpush(self.log_list, log_message_json)
 
-    def get_last_message(self):
-        return self.last_message_handler.last_message
+    def last_message(self):
+        # Get the last log message from the Redis list
+        last_message_json = self.redis.lindex(self.log_list, -1)
+
+        # Deserialize the log message from a JSON string to a dictionary
+        last_message = json.loads(last_message_json)
+
+        return last_message
